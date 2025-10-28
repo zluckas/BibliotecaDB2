@@ -12,10 +12,13 @@ def index():
     return render_template('index.html')
 
 @app.route('/cadastro')
-def cadastro():
-    return render_template('cadastro.html')
-
+def cadastro_usuario():
+    return render_template('cadastro_usuario.html')
 
 @app.route('/login')
 def login():
     return render_template('login.html')
+
+@app.route('/cadastro_livro')
+def cadastro_livro():
+    return render_template('cadastro_livro.html')
