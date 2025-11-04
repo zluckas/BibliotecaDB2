@@ -10,7 +10,7 @@ Base = declarative_base()
 class User(Base,UserMixin):
     __tablename__ = 'usuarios'
 
-    id_user:Mapped[int] = mapped_column(Integer, primary_key=True)
+    ID_usuario:Mapped[int] = mapped_column(Integer, primary_key=True)
     Nome_usuario:Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     email:Mapped[str] = mapped_column(VARCHAR(255), nullable=False, unique=True)
     senha:Mapped[int] = mapped_column(VARCHAR(60), nullable= False)
@@ -18,7 +18,13 @@ class User(Base,UserMixin):
     data_inscricao:Mapped[date] = mapped_column(Date, nullable=False)
     multa_atual:Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=True)
 
-<<<<<<< HEAD
+    @classmethod
+    def get(cls, user_id):
+        with Session(bind = engine) as sessao:
+            obj = sessao.query(User).where(User.id_user == user_id).first()
+            sessao.close()
+            return obj
+
 class Autores(Base):
     __tablename__ = 'autores'
     id_autor:Mapped[int] = mapped_column(Integer AUTO_INCREMENT PRIMARY KEY
@@ -26,36 +32,21 @@ class Autores(Base):
     nacionalidade VARCHAR(255)
     data_nascimento:Mapped[date] = mapped_column(DATE)
     biografia:Mapped[str] TEXT
-=======
-    @classmethod
-    def get(cls, user_id):
-        with Session(bind = engine) as sessao:
-            obj = sessao.query(User).where(User.id_user == user_id).first()
-            sessao.close()
-            return obj
-        
-class Autores(Base):
-    __tablename__ = 'autores'
-    id_autor:Mapped[int] = mapped_column(Integer, primary_key=True)
-    Nome_autor:Mapped[str] = mapped_column(VARCHAR(255), nullable=False)                
-    Nacionalidade:Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
-    Data_nascimento:Mapped[date] = mapped_column(Date, nullable=False)
-    Biografia:Mapped[str] = mapped_column(VARCHAR(500), nullable=False)
 
 class Genero(Base):
     __tablename__= 'generos'
-    id_genero:Mapped[int] = mapped_column(Integer,primary_key=True)
+    ID_genero:Mapped[int] = mapped_column(Integer,primary_key=True)
     Nome_genero:Mapped[str] = mapped_column(VARCHAR(255),nullable=False)
 
 class Editora(Base):
     __tablename__= 'editoras'
-    id_editora:Mapped[int] = mapped_column(Integer,primary_key=True)
+    ID_editora:Mapped[int] = mapped_column(Integer,primary_key=True)
     Nome_editora:Mapped[str] = mapped_column(VARCHAR(255),nullable=False)
     Endereco_editora:Mapped[str] = mapped_column(VARCHAR(255),nullable=True)
 
 class Livro(Base):
     __tablename__ = 'livros'
-    id_livro:Mapped[int] = mapped_column(Integer,primary_key=True)
+    ID_livro:Mapped[int] = mapped_column(Integer,primary_key=True)
     Titulo:Mapped[str] = mapped_column(VARCHAR(255),nullable=False)
     Autor_id: Mapped[int] = mapped_column(Integer,ForeignKey('autores.id_autor'))
     Autor = relationship("Autores") 
@@ -79,7 +70,3 @@ class Emprestimos(Base):
     Data_devolucao_prevista:Mapped[date] = mapped_column(Date, nullable=False)
     Data_devolucao_real:Mapped[date] = mapped_column(Date, nullable=True)
     Status_emprestimo:Mapped[str] = mapped_column(VARCHAR(20), nullable=False)
-
-
-  
->>>>>>> acdbb5a7b09a90dad03e52035d95303b613b5cde
