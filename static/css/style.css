@@ -1,12 +1,22 @@
+
 .inicial {
+    
+    margin-top: 100px;
+    width: 80%;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
-
-.landpage {
-    margin-left: 40px;
-    background-color: white;
-    width: 400px;
-    height: 600px;
-    border-radius: 10px;
-    margin-bottom: 80px;
+.content{
+    display: flex;
+    flex-direction: column;
 }
+.landpage {
+    margin-top: 25px;
+    display: flex;
+    background-color:red;
+    width: 20%;
+    height:100vh;
+    border-radius: 10px;
+    margin-left: 10px;
+    
+}
+
