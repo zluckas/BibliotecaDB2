@@ -7,4 +7,5 @@
 - José Abílio
 - Lucas Fernando
 - Maria Luiza
+- Weslley Albert
 
