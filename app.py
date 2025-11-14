@@ -482,6 +482,7 @@ def lista_autores():
 
 
 @app.route('/cadastrar_emprestimo', methods = ['POST','GET'])
+@login_required
 def cadastrar_emprestimo():
     if request.method == 'POST':
         isbn = request.form['ISBN']
@@ -491,9 +492,19 @@ def cadastrar_emprestimo():
         status_emprestimo = request.form['status_emprestimo']
 
         with engine.connect() as conn:
+            
             livro = conn.execute(text('select ID_livro from Livros where ISBN = :isbn '),{'isbn':isbn}).scalar()
+            qtd_livro = conn.execute(text('SELECT Quantidade_disponivel from Livros WHERE ID_livro = :id_livro'),{'id_livro':livro}).scalar()
+            if qtd_livro < 1:
+                flash("livro não pode ser cadastrado, pois não há mais disponivel na biblioteca!")
+                return redirect(url_for('cadastrar_emprestimo'))
             conn.execute(text('INSERT INTO Emprestimos VALUES(DEFAULT, :Usuario_id, :Livro_id, :Data_emprestimo,:Data_devolucao_prevista, :Data_devoluçao_real,:Status_emprestimo)'),
             {'Usuario_id' : current_user.id,'Livro_id' : livro, 'Data_emprestimo' : data_emprestimo, 'Data_devolucao_prevista': data_devolucao, 'Data_devoluçao_real': data_devolucao_real , 'Status_emprestimo' : status_emprestimo})
+            #atualizando a quantidade de livros
+            conn.execute(text("""
+                        UPDATE Livros
+                        SET Quantidade_disponivel = Quantidade_disponivel - 1
+                        WHERE ISBN = :isbn"""), { 'isbn':isbn})
             conn.commit()
     return render_template('cadastrar_emprestimo.html')
 
@@ -505,7 +516,8 @@ def listar_emprestimos():
     return render_template('lista_emprestimo.html', rows=rows)
 
 
-@app.route('/deletar_emprestimo/<int:id>' )
+@app.route('/deletar_emprestimo/<int:id>')
+@login_required
 def deletar_emprestimo(id):
     with engine.connect() as conn:
         try:
@@ -517,48 +529,39 @@ def deletar_emprestimo(id):
             conn.close()
     return redirect(url_for('listar_emprestimos'))
 
-@app.route('/editar_emprestimo')
-def editar_emprestimo():
+@app.route('/editar_emprestimo/<int:id>', methods = ['POST', 'GET'])
+@login_required
+def editar_emprestimo(id):
     with engine.connect() as conn:
         if request.method == 'POST':
-            id_emprestimo = request.form['ID_emprestimo']
-            usuario_id = request.form['Usuario_id']
-            livro_id = request.form['Livro_id']
             data_emprestimo = request.form['Data_emprestimo']
             data_devolucao_prevista = request.form['Data_devolucao_prevista']
             data_devolucao_real = request.form['Data_devolucao_real']
             status_emprestimo = request.form['Status_emprestimo']
 
             conn.execute(text("""
-                UPDATE Emprestimos
-                SET ID_emprestimo = :id_emprestimo,
-                    Usuario_id = :usuario_id,
-                    Livro_id = :livro_id,
-                    Data_emprestimo = :data_emprestimo
-                    Data_devolucao_prevista = :data_devolucao_prevista
-                    Data_devolucao_real = :data_devolucao_real
+                UPDATE emprestimos
+                SET Data_emprestimo = :data_emprestimo,
+                    Data_devolucao_prevista = :data_devolucao_prevista,
+                    Data_devolucao_real = :data_devolucao_real,
                     Status_emprestimo = :status_emprestimo
                 WHERE ID_emprestimo = :id
             """), {
-                "id_emprestimo": id_emprestimo,
-                "usuario_id": usuario_id,
-                "livro_id": livro_id,
                 "data_emprestimo": data_emprestimo,
                 "data_devolucao_prevista": data_devolucao_prevista,
                 "data_devolucao_real": data_devolucao_real,
                 "status_emprestimo": status_emprestimo,
-                "id": id_emprestimo
+                "id": id
             })
             conn.commit()
 
-            return redirect(url_for('listar_livros'))
 
         emprestimos = conn.execute(text("""
-            SELECT * FROM Autores
-            WHERE ID_autor = :id
-        """), {"id": id_emprestimo}).mappings().fetchone()
+                SELECT * FROM Emprestimos
+                WHERE ID_emprestimo = :id
+            """), {"id": id}).mappings().fetchone()
 
-    return render_template('editar_emprestimo.html', emprestimos)
+    return render_template('editar_emprestimo.html', Emprestimos = emprestimos)
 
 
 
