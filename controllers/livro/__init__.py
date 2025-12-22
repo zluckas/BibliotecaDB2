@@ -1,7 +1,8 @@
-from flask import Blueprint, request, render_template, flash, redirect, url_for
+from flask import Blueprint, request, render_template, flash, redirect, url_for, jsonify
 from flask_login import login_required
 from extensions.database import engine
 from sqlalchemy import text
+import pymysql
 
 livro_bp = Blueprint("livro", __name__, static_folder="static", template_folder="templates")
 
@@ -85,17 +86,22 @@ def cadastro_livro():
                 flash("autor ainda não cadastrado")'''
             
 
-            conn.execute(query, {
-                'titulo': titulo,
-                'autor': autor_id,
-                'isbn': isbn,
-                'publicacao': ano_publicacao,
-                'genero': genero_id,
-                'editora': editora_id,
-                'quantidade': quantidade,
-                'resumo': resumo
-            })
-            conn.commit()
+            try:
+                conn.execute(query, {
+                    'titulo': titulo,
+                    'autor': autor_id,
+                    'isbn': isbn,
+                    'publicacao': ano_publicacao,
+                    'genero': genero_id,
+                    'editora': editora_id,
+                    'quantidade': quantidade,
+                    'resumo': resumo
+                })
+                conn.commit()
+            except pymysql.MySQLError as e:
+                mensagem = e.args[1]
+                flash(f"Erro ao cadastrar livro: {mensagem}", 'error')
+                return redirect(url_for('livro.cadastro_livro'))
         return redirect(url_for('auth.index'))
     return render_template('cadastro_livro.html')
 
@@ -137,17 +143,26 @@ def editar_livro(id):
             resumo = request.form['resumo']
             qtd = request.form['qtd_disponivel']
 
-            conn.execute(text("""
-                UPDATE Livros
-                SET Titulo = :titulo,
-                    ISBN = :isbn,
-                    Ano_publicacao = :ano,
-                    Resumo = :resumo,
-                    Quantidade_disponivel = :qtd
-                WHERE ID_livro = :id
-            """), {"titulo": titulo, "isbn": isbn, "ano": ano, "resumo": resumo, "qtd": qtd, "id": id})
-            conn.commit()
+            try:
+                conn.execute(text("""
+                    UPDATE Livros
+                    SET Titulo = :titulo,
+                        ISBN = :isbn,
+                        Ano_publicacao = :ano,
+                        Resumo = :resumo,
+                        Quantidade_disponivel = :qtd
+                    WHERE ID_livro = :id
+                """), {"titulo": titulo, "isbn": isbn, "ano": ano, "resumo": resumo, "qtd": qtd, "id": id})
+                conn.commit()
 
+            except pymysql.MySQLError as e:
+                mensagem = e.args[1]
+                flash(f"Erro ao atualizar o livro: {mensagem}", 'error')
+                return redirect(url_for('livro.editar_livro', id=id)) 
+
+            finally:
+                conn.close()
+            
             return redirect(url_for('livro.listar_livros'))
 
         #  Quando for GET (abrir a página), busca o livro no banco:
@@ -179,8 +194,9 @@ def deletar_livro(id):
         try:
             conn.execute(text("DELETE FROM Livros WHERE ID_livro = :id"), {"id": id})
             conn.commit()
-        except Exception as e:
-            flash(f"Erro de integridade {e}",'error')
+        except pymysql.MySQLError as e:
+            mensagem = e.args[1]
+            flash(f"Erro de integridade: {mensagem}", 'error')
         finally:
             conn.close()
     return redirect(url_for('livro.listar_livros'))
