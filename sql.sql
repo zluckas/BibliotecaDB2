@@ -40,8 +40,8 @@ CREATE TABLE Usuarios ( ID_usuario INT AUTO_INCREMENT PRIMARY KEY,
     Email VARCHAR(255) UNIQUE,
     Senha VARCHAR(255), 
     Numero_telefone VARCHAR(15),
-    Data_inscricao DATE NOT NULL DEFAULT (CURDATE()),
-    Multa_atual DECIMAL(10, 2) NOT NULL DEFAULT 0.00 );
+    Data_inscricao DATE,
+    Multa_atual DECIMAL(10, 2)
 
 CREATE TABLE Emprestimos ( 
     ID_emprestimo INT AUTO_INCREMENT PRIMARY KEY, 
