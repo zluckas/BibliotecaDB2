@@ -14,24 +14,27 @@
       <table class="tabela">
         <thead>
           <tr>
-            <th>Data</th>
+            <th>ID_log</th>
+            <th>Data_log</th>
+            <th>Usuario_id</th>
+            <th>Emprestimo_id</th>
             <th>Operação</th>
             <th>Campo</th>
             <th>Valor Anterior</th>
             <th>Valor Novo</th>
-            <th>Usuário</th>
           </tr>
         </thead>
           <tbody>
-              {% for emprestimo in rows %}
+              {% for log in logs %}
               <tr>
-              <td>{{ emprestimo.ID_emprestimo }}</td>
-              <td>{{ emprestimo.Usuario_id }}</td>
-              <td>{{ emprestimo.Livro_id }}</td>
-              <td>{{ emprestimo.Data_emprestimo }}</td>
-              <td>{{ emprestimo.Data_devolucao_prevista }}</td>
-              <td>{{ emprestimo.Data_devolucao_real}}</td>
-              <td>{{ emprestimo.Status_emprestimo }}</td>
+              <td>{{ log.ID_log }}</td>
+              <td>{{ log.Data_log }}</td>
+              <td>{{ log.Usuario_id }}</td>
+              <td>{{ log.Emprestimo_id }}</td>
+              <td>{{ log.Operacao }}</td>
+              <td>{{ log.Campo }}</td>
+              <td>{{ log.Valor_Anterior }}</td>
+              <td> {{ log.Valor_Novo }} </td>
               {% endfor %}
           </tbody>
           

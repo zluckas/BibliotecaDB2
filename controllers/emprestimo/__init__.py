@@ -5,7 +5,14 @@ from sqlalchemy import text
 from datetime import date
 from sqlalchemy.exc import DBAPIError
 from datetime import date
+
+
 emprestimo_bp = Blueprint("emprestimo", __name__, static_folder="static", template_folder="templates")
+
+
+
+
+
 
 @emprestimo_bp.route('/cadastrar_emprestimo', methods = ['POST','GET'])
 @login_required
@@ -31,14 +38,8 @@ def cadastrar_emprestimo():
                     'Usuario_id': current_user.id,
                     'Livro_id': id_livro,
                     'Data_emprestimo': data_emprestimo,
-                    # 'Data_devolucao_prevista': data_devolucao,
-                    # 'Status_emprestimo': status_emprestimo
+                    
                 })
-                #atualizando a quantidade de livros
-                # conn.execute(text("""
-                #             UPDATE Livros
-                #             SET Quantidade_disponivel = Quantidade_disponivel - 1
-                #             WHERE ID_livro = :id_livro"""), { 'id_livro':id_livro})
                 conn.commit()
             
             except DBAPIError as e:
@@ -100,7 +101,9 @@ def editar_emprestimo(id):
 def deletar_emprestimo(id):
     with engine.connect() as conn:
         try:
-            conn.execute(text("DELETE FROM Emprestimos WHERE ID_emprestimo = :id"), {"id": id})
+            conn.execute(text("UPDATE   Log_Emprestimos SET Emprestimo_id = NULL WHERE Emprestimo_id = :id"), {"id": id})
+            conn.execute(text("DELETE  FROM Emprestimos WHERE ID_emprestimo = :id"), {"id": id})
+            
             # conn.execute(text("SELECT Livro_id from Emprestimos where ID_emprestimo = :id"), {"id": id})
             # conn.execute(text("UPDATE Livros SET Quantidade_disponivel = Quantidade_disponivel + 1"))
             conn.commit()
@@ -130,7 +133,9 @@ def devolucao_emprestimo(id):
     return redirect(url_for('emprestimo.listar_emprestimos'))
 
 
-@emprestimo_bp.route('/logs_emprestimo')
+@emprestimo_bp.route('/logs_emprestimo', methods = ['POST', 'GET'])
 # @login_required
 def logs_emprestimo():
-    return render_template('logs_emprestimo.html')
+    with engine.connect() as conn:
+        logs = conn.execute(text('SELECT * from Log_Emprestimos'))
+    return render_template('logs_emprestimo.html', logs = logs)
