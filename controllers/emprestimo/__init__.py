@@ -13,7 +13,7 @@ emprestimo_bp = Blueprint("emprestimo", __name__, static_folder="static", templa
 @login_required
 def cadastrar_emprestimo():
     if request.method == 'POST':
-        id_livro = request.form['id_livro']
+        id_livro = request.form['livro']
         data_devolucao_prevista = request.form['data_devolucao_prevista']
 
         with engine.connect() as conn:
@@ -21,6 +21,9 @@ def cadastrar_emprestimo():
                 qtd_livro = conn.execute(text('SELECT Quantidade_disponivel from Livros WHERE ID_livro = :id_livro'),{'id_livro':id_livro}).scalar()
                 if qtd_livro == 0:
                     flash("livro não pode ser cadastrado, pois não há mais disponivel na biblioteca!", 'error')
+                    return redirect(url_for('emprestimo.cadastrar_emprestimo'))
+                if id_livro == '' or id_livro == 'none':
+                    flash("Selecione um livro para o empréstimo!", 'error')
                     return redirect(url_for('emprestimo.cadastrar_emprestimo'))
                 conn.execute(text('''
                     INSERT INTO Emprestimos
@@ -110,14 +113,14 @@ def editar_emprestimo(id):
 def deletar_emprestimo(id):
     with engine.connect() as conn:
         try:
-            conn.execute(text("UPDATE   Log_Emprestimos SET Emprestimo_id = NULL WHERE Emprestimo_id = :id"), {"id": id})
-            conn.execute(text("DELETE  FROM Emprestimos WHERE ID_emprestimo = :id"), {"id": id})
+            conn.execute(text("DELETE FROM Emprestimos WHERE ID_emprestimo = :id"), {"id": id})
             
             # conn.execute(text("SELECT Livro_id from Emprestimos where ID_emprestimo = :id"), {"id": id})
             # conn.execute(text("UPDATE Livros SET Quantidade_disponivel = Quantidade_disponivel + 1"))
             conn.commit()
-        except Exception as e:
-            flash(f"Erro de integridade {e}",'error')
+        except DBAPIError as e:
+            mensagem = e.orig.args[1]
+            flash(f"Erro de integridade: {mensagem}",'error')
         finally:
             conn.close()
     return redirect(url_for('emprestimo.listar_emprestimos'))

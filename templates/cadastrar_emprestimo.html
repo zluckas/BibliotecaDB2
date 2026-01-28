@@ -8,7 +8,7 @@
 
  <form action="{{url_for('emprestimo.cadastrar_emprestimo')}}" method="POST">
     <label for="livro">Livro:</label>
-   <select name="id_livro" id="livro">
+   <select name="livro" id="livro">
     <option value="" style="text-align: center;">-- Selecione um Livro --</option>
     {% for livro in livros %}
         <option value="{{livro.ID_livro}}"> {{livro.Titulo}} </option>
