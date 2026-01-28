@@ -49,13 +49,13 @@ end //
 delimiter ;
 
 
--- a data de devolução real não pode ser anterior à data do empréstimo ou à data de devolução prevista
+-- a data de devolução real não pode ser anterior à data do empréstimo
 delimiter //
 create trigger validacao_data_devolucao_real --feito
 before update on Emprestimos
 for each row 
 begin 
-	if new.Data_devolucao_real < NOW() or new.Data_devolucao_real < old.Data_devolucao_prevista then
+	if new.Data_devolucao_real < new.Data_emprestimo then
 		signal sqlstate "45000"
 		set message_text = "Data de devolução inconsistente";
 	end if;
@@ -63,16 +63,15 @@ end //
 delimiter ;
 
 
--- o valor da multa não pode ser negativo
--- ===== TIRA ESSE =====
+-- criar um trigger para retornar um alert quando o usuário não selecionar um livro no cadastro de empréstimo
 delimiter //
-create trigger validacao_valor_multa
-before insert on usuarios
+create trigger validacao_livro_selecionado --cancelado
+before insert on Emprestimos
 for each row 
 begin 
-	if new.Multa_atual < 0 then
+	if new.Livro_id is null then
 		signal sqlstate "45000"
-		set message_text = "Valor da multa não pode ser negativa";
+		set message_text = "Livro não selecionado";
     end if;
 end //
 delimiter ;
@@ -102,7 +101,8 @@ END//
 DELIMITER ;
 
 -- Log UPDATE de status do empréstimo 
-CREATE TRIGGER log_emprestimo_update
+DELIMITER //
+CREATE TRIGGER log_emprestimo_update -- feito
 AFTER UPDATE ON Emprestimos
 FOR EACH ROW
 BEGIN
@@ -121,10 +121,11 @@ BEGIN
         );
     END IF;
 END//
+DELIMITER ;
 
 -- Log DELETE em empréstimos
 DELIMITER //
-CREATE TRIGGER log_emprestimo_delete
+CREATE TRIGGER log_emprestimo_delete -- NÃO FEITO
 AFTER DELETE ON Emprestimos
 FOR EACH ROW
 BEGIN
@@ -134,12 +135,13 @@ BEGIN
     (
         NOW(),
         'DELETE',
-        'Emprestimo',
-        OLD.Status_emprestimo,
+        NULL,
+        NULL,
         NULL,
         OLD.Usuario_id,
-        OLD.ID_emprestimo
+        NULL
     );
+
 END//
 DELIMITER ;
 
@@ -296,7 +298,7 @@ DELIMITER ;
  
  DELIMITER //
 
-CREATE TRIGGER excluir_livro_cancelar_emprestimos_pendentes 
+CREATE TRIGGER excluir_livro_cancelar_emprestimos_pendentes --feito
 BEFORE DELETE ON livros
 FOR EACH ROW 
 BEGIN 
@@ -366,7 +368,7 @@ DELIMITER ;
 
 DELIMITER //
 
-CREATE TRIGGER definir_emprestimo_pendente
+CREATE TRIGGER definir_emprestimo_pendente -- feito
 BEFORE INSERT ON Emprestimos
 FOR EACH ROW
 

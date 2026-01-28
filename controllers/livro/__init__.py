@@ -40,11 +40,11 @@ def cadastro_livro():
                 flash('Editora não encontrada, cadastre para continuar!','error')
                 return redirect(url_for('editora.cadastro_editora'))
 
-             if genero_id == 'none':
+             if genero_id == 'none' or genero_id == '':
                 flash('Genero não encontrado, cadastre para continuar!', 'error')
                 return redirect(url_for('genero.cadastro_genero'))
 
-             if autor_id == 'none':
+             if autor_id == 'none' or autor_id == '':
                 flash('autor não encontrado, cadastre para continuar!', 'error')
                 return redirect(url_for('autor.cadastro_autor'))
 
@@ -65,8 +65,8 @@ def cadastro_livro():
                 conn.commit()
  
              except DBAPIError as e:
-                # mensagem = e.orig.args[1]
-                flash(f"Erro ao cadastrar livro: {e}", 'error')
+                mensagem = e.orig.args[1]
+                flash(f"Erro ao cadastrar livro: {mensagem}", 'error')
                 return redirect(url_for('livro.cadastro_livro'))
             
              finally:

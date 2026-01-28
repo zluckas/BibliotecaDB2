@@ -48,7 +48,7 @@ CREATE TABLE Emprestimos (
     ID_emprestimo INT AUTO_INCREMENT PRIMARY KEY, 
     Usuario_id INT, 
     Livro_id INT,
-    Data_emprestimo DATE DEFAULT CURRENT_DATE,
+    Data_emprestimo DATE DEFAULT (current_date()),
     Data_devolucao_prevista DATE, 
     Data_devolucao_real DATE NULL, 
     Status_emprestimo ENUM('pendente', 'devolvido', 'atrasado', 'cancelado') DEFAULT NULL, 
@@ -58,32 +58,39 @@ CREATE TABLE Log_Emprestimos (
     ID_log INT AUTO_INCREMENT PRIMARY KEY,
     Data_log DATETIME,
     Usuario_id INT,
-    Emprestimo_id INT,
+    Emprestimo_id INT NULL,
     Operacao ENUM('INSERT', 'UPDATE', 'DELETE'),
     Campo VARCHAR(100),
     Valor_Anterior TEXT,
     Valor_Novo TEXT,
     FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario),
-    FOREIGN KEY (Emprestimo_id) REFERENCES Emprestimos(ID_emprestimo)
-    
+    FOREIGN KEY (Emprestimo_id) REFERENCES Emprestimos(ID_emprestimo) ON DELETE SET NULL
 );
 
 CREATE TABLE Log_Usuarios(
     Data_log DATETIME,
     Operacao ENUM('INSERT', 'UPDATE', 'DELETE'),
-    Usuario_id INT,
+    Usuario_id INT NULL,
     Campo VARCHAR(100),
     Valor_Anterior TEXT,
     Valor_Novo TEXT,
-    FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario)
+    FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario) ON DELETE SET NULL
 );
 
 CREATE TABLE Log_Livros(
     Data_log DATETIME,
     Operacao ENUM('INSERT', 'UPDATE', 'DELETE'),
-    Livro_id INT,
+    Livro_id INT NULL,
     Campo VARCHAR(100),
     Valor_Anterior TEXT,
     Valor_Novo TEXT,
-    FOREIGN KEY (Livro_id) REFERENCES Livros(ID_livro)
+    FOREIGN KEY (Livro_id) REFERENCES Livros(ID_livro) ON DELETE SET NULL
 ); 
+
+CREATE TABLE Log_Multas(
+    Data_log DATETIME,
+    Usuario_id INT NULL,
+    Valor_Anterior DECIMAL(10, 2),
+    Valor_Novo DECIMAL(10, 2),
+    FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario) ON DELETE SET NULL
+);
