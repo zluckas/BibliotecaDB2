@@ -193,7 +193,7 @@ CREATE TABLE Log_Emprestimos (
     Valor_Novo TEXT,
 
 
-    FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario),
+    FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario) ON DELETE SET NULL,
 
 
     FOREIGN KEY (Emprestimo_id) REFERENCES Emprestimos(ID_emprestimo) ON DELETE SET NULL

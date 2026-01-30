@@ -69,7 +69,7 @@ def editar_emprestimo(id):
             status_emprestimo = request.form['Status_emprestimo']
             
             # Converter datas vazias para None
-            if not data_devolucao_real or data_devolucao_real == '' or data_devolucao_real == 'None':
+            if not data_devolucao_real or data_devolucao_real == '':
                 data_devolucao_real = None
             try:
                 conn.execute(text("""
