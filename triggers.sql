@@ -63,22 +63,218 @@ end //
 delimiter ;
 
 
--- criar um trigger para retornar um alert quando o usuário não selecionar um livro no cadastro de empréstimo
+-- Validar se o ano de publicação do livro é válido
 delimiter //
-create trigger validacao_data_publicacao -- feito
+create trigger validacao_ano_publicacao -- feito
 before insert on Livros
 for each row 
 begin 
-	if new.Data_publicacao > NOW() then
+	if new.Ano_publicacao > YEAR(NOW()) then
 		signal sqlstate "45000"
-		set message_text = "Data de puyblicação inválida";
+		set message_text = "Data de publicação inválida";
     end if;
 end //
 delimiter ;
 
 
 
--- ==================== GATILHOS DE LOG ====================
+
+-- ==================== GATILHOS DE ATUALIZAÇÃO AUTOMÁTICA PÓS-EVENTO====================:
+
+-- Devolução com atraso => atualizar multa_atua
+ DELIMITER //
+ 
+ 
+CREATE TRIGGER devolucao_atraso_atualizar_multa 
+AFTER UPDATE ON Emprestimos
+FOR EACH ROW 
+BEGIN 
+	DECLARE multa INT;
+    
+    SET multa = calcular_multa(
+        NEW.data_devolucao_prevista,
+        NEW.data_devolucao_real
+    );	
+    
+	IF NEW.data_devolucao_real IS NOT NULL
+		AND NEW.data_devolucao_real <> '0000-00-00'
+        AND NEW.data_devolucao_real > NEW.data_devolucao_prevista THEN
+        UPDATE Usuarios SET Multa_atual = Multa_atual + multa
+        WHERE ID_usuario = NEW.Usuario_id;
+		
+    END IF;
+END //
+DELIMITER ;
+
+
+-- Ao excluir emprestimo => aumentar a quantidade_disponivel
+
+DELIMITER //
+
+CREATE TRIGGER aumentar_quantidade_excluir_emprestimo
+AFTER DELETE ON Emprestimos
+FOR EACH ROW
+BEGIN
+	IF OLD.Status_emprestimo <> 'devolvido' THEN
+		UPDATE Livros
+		SET Quantidade_disponivel = Quantidade_disponivel + 1
+		WHERE ID_livro = OLD.Livro_id;
+	END IF ;
+END //
+
+DELIMITER ;
+
+
+-- cancelar emprestimos ao excluir o livro
+ 
+ DELIMITER //
+
+CREATE TRIGGER excluir_livro_cancelar_emprestimos_pendentes -- feito
+BEFORE DELETE ON Livros
+FOR EACH ROW 
+BEGIN 
+	UPDATE Emprestimos SET Status_emprestimo = 'cancelado', Livro_ID = NULL
+	WHERE Livro_id = OLD.ID_livro
+    AND Status_emprestimo = 'pendente';
+    
+   
+END //
+DELIMITER ;
+
+-- Ao devolver livro => aumentar a quantidade_disponivel
+DELIMITER //
+
+CREATE TRIGGER aumentar_quantidade_devolver_emprestimo
+AFTER UPDATE ON Emprestimos
+FOR EACH ROW
+BEGIN
+	IF OLD.Status_emprestimo <> 'devolvido'
+	AND NEW.Status_emprestimo = 'devolvido' THEN
+		UPDATE Livros
+		SET Quantidade_disponivel = Quantidade_disponivel + 1
+		WHERE ID_livro = OLD.Livro_id;
+	END IF ;
+END //
+
+DELIMITER ;
+
+-- Ao emprestar o livro => diminuir a quantidade_disponviel
+
+DELIMITER //
+
+CREATE TRIGGER DiminuirEmprestar
+AFTER INSERT ON Emprestimos
+FOR EACH ROW
+
+BEGIN 
+	UPDATE Livros
+    SET Quantidade_disponivel = Quantidade_disponivel - 1
+    WHERE ID_livro = NEW.Livro_id;
+
+END //
+
+DELIMITER ;
+
+
+
+-- ===================== GATILHOS DE GERAÇÃO AUTOMÁTICA DE VALORES ====================:
+
+-- preencher data inscrição
+
+DELIMITER //
+
+CREATE TRIGGER preencher_data_incricao 
+BEFORE INSERT ON Usuarios
+FOR EACH ROW 
+BEGIN 
+	SET NEW.Data_inscricao = CURDATE();
+END //
+DELIMITER ;
+
+
+ DELIMITER //
+ 
+ 
+-- Definir o status inicial do emprestimo como "pendente"
+
+DELIMITER //
+
+CREATE TRIGGER definir_emprestimo_pendente -- feito
+BEFORE INSERT ON Emprestimos
+FOR EACH ROW
+
+BEGIN 
+	SET NEW.Status_emprestimo = 'pendente';
+
+END //
+
+DELIMITER ;
+
+
+-- Preencher  a data_devolucao_real automaticamente
+
+DELIMITER //
+
+CREATE TRIGGER definir_devolucao_real
+BEFORE UPDATE ON Emprestimos
+FOR EACH ROW
+
+BEGIN 
+	IF OLD.Status_emprestimo <> 'devolvido'
+    AND NEW.Status_emprestimo = 'devolvido' THEN
+		SET NEW.Data_devolucao_real = CURDATE();
+	END IF;
+END //
+
+DELIMITER ;
+
+
+-- Gerar a Data_devolução_prevista(+7 dias)
+
+DELIMITER //
+
+CREATE TRIGGER definir_devolucao_prevista
+BEFORE INSERT ON Emprestimos
+FOR EACH ROW
+
+BEGIN 
+	
+	SET NEW.Data_devolucao_prevista = data_devolucao_prevista(NEW.Data_emprestimo);
+	
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+CREATE TRIGGER definir_multa_inicial
+BEFORE INSERT ON Usuarios
+FOR EACH ROW
+
+BEGIN 
+	SET NEW.Multa_atual = 0;
+END //
+
+DELIMITER ;
+
+
+
+DELIMITER //
+CREATE TRIGGER alterar_log_livro_id_null
+BEFORE DELETE ON Livros
+FOR EACH ROW
+
+BEGIN 
+    UPDATE Log_Livros SET Livro_id = NULL WHERE Livro_id = OLD.ID_livro;
+END //
+
+DELIMITER ;
+
+
+
+
+
+-- =============================================== GATILHOS DE LOG ===============================================
 -- Log INSERT em empréstimos
 DELIMITER //
 CREATE TRIGGER log_emprestimo_insert --feito
@@ -248,196 +444,6 @@ DELIMITER ;
 
 
 
--- ==================== GATILHOS DE ATUALIZAÇÃO AUTOMÁTICA PÓS-EVENTO====================:
-
--- Devolução com atraso => atualizar multa_atua
- DELIMITER //
- 
- 
-CREATE TRIGGER devolucao_atraso_atualizar_multa 
-AFTER UPDATE ON emprestimos
-FOR EACH ROW 
-BEGIN 
-	DECLARE multa INT;
-    
-    SET multa = calcular_multa(
-        NEW.data_devolucao_prevista,
-        NEW.data_devolucao_real
-    );	
-    
-	IF NEW.data_devolucao_real IS NOT NULL
-		AND NEW.data_devolucao_real <> '0000-00-00'
-        AND NEW.data_devolucao_real > NEW.data_devolucao_prevista THEN
-        UPDATE Usuarios SET Multa_atual = Multa_atual + multa
-        WHERE ID_usuario = NEW.Usuario_id;
-		
-    END IF;
-END //
-DELIMITER ;
-
-
--- Ao excluir emprestimo => aumentar a quantidade_disponivel
-
-DELIMITER //
-
-CREATE TRIGGER aumentar_quantidade_excluir_emprestimo
-AFTER DELETE ON Emprestimos
-FOR EACH ROW
-BEGIN
-	IF OLD.Status_emprestimo <> 'devolvido' THEN
-		UPDATE Livros
-		SET Quantidade_disponivel = Quantidade_disponivel + 1
-		WHERE ID_livro = OLD.Livro_id;
-	END IF ;
-END //
-
-DELIMITER ;
-
-
--- cancelar emprestimos ao excluir o livro
- 
- DELIMITER //
-
-CREATE TRIGGER excluir_livro_cancelar_emprestimos_pendentes --feito
-BEFORE DELETE ON livros
-FOR EACH ROW 
-BEGIN 
-	UPDATE Emprestimos SET Status_emprestimo = 'cancelado', Livro_ID = NULL
-	WHERE Livro_id = OLD.ID_livro
-    AND Status_emprestimo = 'pendente';
-    
-   
-END //
-DELIMITER ;
-
--- Ao devolver livro => aumentar a quantidade_disponivel
-DELIMITER //
-
-CREATE TRIGGER aumentar_quantidade_devolver_emprestimo
-AFTER UPDATE ON Emprestimos
-FOR EACH ROW
-BEGIN
-	IF OLD.Status_emprestimo <> 'devolvido'
-	AND NEW.Status_emprestimo = 'devolvido' THEN
-		UPDATE Livros
-		SET Quantidade_disponivel = Quantidade_disponivel + 1
-		WHERE ID_livro = OLD.Livro_id;
-	END IF ;
-END //
-
-DELIMITER ;
-
--- Ao emprestar o livro => diminuir a quantidade_disponviel
-
-DELIMITER //
-
-CREATE TRIGGER DiminuirEmprestar
-AFTER INSERT ON Emprestimos
-FOR EACH ROW
-
-BEGIN 
-	UPDATE Livros
-    SET Quantidade_disponivel = Quantidade_disponivel - 1
-    WHERE ID_livro = NEW.Livro_id;
-
-END //
-
-DELIMITER ;
-
-
-
--- ===================== GATILHOS DE GERAÇÃO AUTOMÁTICA DE VALORES ====================:
-
--- preencher data inscrição
-
-DELIMITER //
-
-CREATE TRIGGER preencher_data_incricao 
-BEFORE INSERT ON Usuarios
-FOR EACH ROW 
-BEGIN 
-	SET NEW.Data_inscricao = CURDATE();
-END //
-DELIMITER ;
-
-
- DELIMITER //
- 
- 
--- Definir o status inicial do emprestimo como "pendente"
-
-DELIMITER //
-
-CREATE TRIGGER definir_emprestimo_pendente -- feito
-BEFORE INSERT ON Emprestimos
-FOR EACH ROW
-
-BEGIN 
-	SET NEW.Status_emprestimo = 'pendente';
-
-END //
-
-DELIMITER ;
-
-
--- Preencher  a data_devolucao_real automaticamente
-
-DELIMITER //
-
-CREATE TRIGGER definir_devolucao_real
-BEFORE UPDATE ON Emprestimos
-FOR EACH ROW
-
-BEGIN 
-	IF OLD.Status_emprestimo <> 'devolvido'
-    AND NEW.Status_emprestimo = 'devolvido' THEN
-		SET NEW.Data_devolucao_real = CURDATE();
-	END IF;
-END //
-
-DELIMITER ;
-
-
--- Gerar a Data_devolução_prevista(+7 dias)
-
-DELIMITER //
-
-CREATE TRIGGER definir_devolucao_prevista
-BEFORE INSERT ON Emprestimos
-FOR EACH ROW
-
-BEGIN 
-	
-	SET NEW.Data_devolucao_prevista = data_devolucao_prevista(NEW.Data_emprestimo);
-	
-END //
-
-DELIMITER ;
-
-
-DELIMITER //
-CREATE TRIGGER definir_multa_inicial
-BEFORE INSERT ON Usuarios
-FOR EACH ROW
-
-BEGIN 
-	SET NEW.Multa_atual = 0;
-END //
-
-DELIMITER ;
-
-
-
-DELIMITER //
-CREATE TRIGGER alterar_log_livro_id_null
-BEFORE DELETE ON Livros
-FOR EACH ROW
-
-BEGIN 
-    UPDATE Log_Livros SET Livro_id = NULL WHERE Livro_id = OLD.ID_livro;
-END //
-
-DELIMITER ;
 
 
 -- ==================== FUNCTIONS ====================
