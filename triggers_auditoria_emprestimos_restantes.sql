@@ -26,7 +26,7 @@ CREATE TRIGGER log_emprestimo_update_datas
 AFTER UPDATE ON Emprestimos
 FOR EACH ROW
 BEGIN
-    IF COALESCE(OLD.Data_devolucao_prevista,'0000-00-00') <> COALESCE(NEW.Data_devolucao_prevista,'0000-00-00') THEN
+    IF NOT (OLD.Data_devolucao_prevista <=> NEW.Data_devolucao_prevista) THEN
         INSERT INTO Log_Emprestimos
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id, Emprestimo_id)
         VALUES
@@ -40,7 +40,7 @@ BEGIN
             NEW.ID_emprestimo
         );
     END IF;
-    IF COALESCE(OLD.Data_devolucao_real,'0000-00-00') <> COALESCE(NEW.Data_devolucao_real,'0000-00-00') THEN
+    IF NOT (OLD.Data_devolucao_real <=> NEW.Data_devolucao_real) THEN
         INSERT INTO Log_Emprestimos
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id, Emprestimo_id)
         VALUES

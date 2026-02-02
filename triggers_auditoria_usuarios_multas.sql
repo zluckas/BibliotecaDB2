@@ -22,7 +22,8 @@ CREATE TRIGGER log_usuario_update
 AFTER UPDATE ON Usuarios
 FOR EACH ROW
 BEGIN
-    IF COALESCE(OLD.Nome_usuario,'') <> COALESCE(NEW.Nome_usuario,'') THEN
+
+    IF NOT (OLD.Nome_usuario <=> NEW.Nome_usuario) THEN
         INSERT INTO Log_Usuarios
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id)
         VALUES
@@ -35,7 +36,7 @@ BEGIN
             NEW.ID_usuario
         );
     END IF;
-    IF COALESCE(OLD.Email,'') <> COALESCE(NEW.Email,'') THEN
+    IF NOT (OLD.Email <=> NEW.Email) THEN
         INSERT INTO Log_Usuarios
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id)
         VALUES
@@ -48,7 +49,7 @@ BEGIN
             NEW.ID_usuario
         );
     END IF;
-    IF COALESCE(OLD.Numero_telefone,'') <> COALESCE(NEW.Numero_telefone,'') THEN
+    IF NOT (OLD.Numero_telefone <=> NEW.Numero_telefone) THEN
         INSERT INTO Log_Usuarios
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id)
         VALUES
@@ -61,7 +62,7 @@ BEGIN
             NEW.ID_usuario
         );
     END IF;
-    IF COALESCE(OLD.Data_inscricao,'0000-00-00') <> COALESCE(NEW.Data_inscricao,'0000-00-00') THEN
+    IF NOT (OLD.Data_inscricao <=> NEW.Data_inscricao) THEN
         INSERT INTO Log_Usuarios
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id)
         VALUES
@@ -74,7 +75,7 @@ BEGIN
             NEW.ID_usuario
         );
     END IF;
-    IF COALESCE(OLD.Multa_atual, 0) <> COALESCE(NEW.Multa_atual, 0) THEN
+    IF NOT (OLD.Multa_atual <=> NEW.Multa_atual) THEN
         INSERT INTO Log_Usuarios
         (Data_log, Operacao, Campo, Valor_Anterior, Valor_Novo, Usuario_id)
         VALUES
@@ -99,6 +100,7 @@ BEGIN
         );
     END IF;
 END//
+
 
 DROP TRIGGER IF EXISTS log_usuario_delete//
 CREATE TRIGGER log_usuario_delete
@@ -130,6 +132,7 @@ BEGIN
         );
     END IF;
 END//
+
 
 DROP TRIGGER IF EXISTS log_multa_insert//
 CREATE TRIGGER log_multa_insert
